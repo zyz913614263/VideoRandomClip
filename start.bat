@@ -19,4 +19,4 @@ if not exist "%STREAMLIT_DIR%" (
 )
 
 
-%CURRENT_DIR%lib\python\python.exe -m streamlit run %CURRENT_DIR%MoneyPrinterTurbo\webui\Main.py 
+%CURRENT_DIR%lib\python\python.exe -m streamlit run %CURRENT_DIR%VideoRandomClip\webui\Main.py 

@@ -206,141 +206,28 @@ def generate_final_videos(
     return final_video_paths, combined_video_paths
 
 
-def start2(params: VideoParams):
+def start2(task_id:str,params: VideoParams):
+    logger.info(f"start task: {task_id}")
+    sm.state.update_task(task_id, state=const.TASK_STATE_PROCESSING, progress=5)
     materials = video.preprocess_video(
             materials=params.video_materials, clip_duration=params.video_clip_duration
         )
-    downloaded_videos = [material_info.url for material_info in materials]
-    video.combine_videos2(
-            combined_video_path="d:\\test\\1.mp4",
-            video_paths=downloaded_videos,
-        )
-
-
-def start(task_id, params: VideoParams, stop_at: str = "video"):
-    logger.info(f"start task: {task_id}, stop_at: {stop_at}")
-    sm.state.update_task(task_id, state=const.TASK_STATE_PROCESSING, progress=5)
-
-    if type(params.video_concat_mode) is str:
-        params.video_concat_mode = VideoConcatMode(params.video_concat_mode)
-        
-    # 1. Generate script
-    video_script = generate_script(task_id, params)
-    if not video_script:
-        sm.state.update_task(task_id, state=const.TASK_STATE_FAILED)
-        return
-
-    sm.state.update_task(task_id, state=const.TASK_STATE_PROCESSING, progress=10)
-
-    if stop_at == "script":
-        sm.state.update_task(
-            task_id, state=const.TASK_STATE_COMPLETE, progress=100, script=video_script
-        )
-        return {"script": video_script}
-
-    # 2. Generate terms  生成英文关键词
-    video_terms = ""
-    if params.video_source != "local":
-        video_terms = generate_terms(task_id, params, video_script)
-        if not video_terms:
-            sm.state.update_task(task_id, state=const.TASK_STATE_FAILED)
-            return
-    # 保存参数文件
-    save_script_data(task_id, video_script, video_terms, params)
-
-    if stop_at == "terms":
-        sm.state.update_task(
-            task_id, state=const.TASK_STATE_COMPLETE, progress=100, terms=video_terms
-        )
-        return {"script": video_script, "terms": video_terms}
-
     sm.state.update_task(task_id, state=const.TASK_STATE_PROCESSING, progress=20)
-
-    # 3. Generate audio 生成语音和字幕
-    audio_file, audio_duration, sub_maker = generate_audio(task_id, params, video_script)
-    if not audio_file:
-        sm.state.update_task(task_id, state=const.TASK_STATE_FAILED)
-        return
-
-    sm.state.update_task(task_id, state=const.TASK_STATE_PROCESSING, progress=30)
-
-    if stop_at == "audio":
-        sm.state.update_task(
-            task_id,
-            state=const.TASK_STATE_COMPLETE,
-            progress=100,
-            audio_file=audio_file,
+    downloaded_videos = [material_info.url for material_info in materials]
+    combined_video_path = utils.storage_dir("result", create=True)
+    combined_video_path = os.path.join(combined_video_path, f"{task_id}.mp4")
+    video.combine_videos2(
+            combined_video_path=combined_video_path,
+            video_paths=downloaded_videos,
+            audio_duration= params.video_len,
+            video_aspect = params.video_aspect,
+            video_concat_mode=params.video_concat_mode,
+            max_clip_duration = params.video_clip_duration,
         )
-        return {"audio_file": audio_file, "audio_duration": audio_duration}
-
-    # 4. Generate subtitle 生成字幕
-    subtitle_path = generate_subtitle(task_id, params, video_script, sub_maker, audio_file)
-
-    if stop_at == "subtitle":
-        sm.state.update_task(
-            task_id,
-            state=const.TASK_STATE_COMPLETE,
-            progress=100,
-            subtitle_path=subtitle_path,
-        )
-        return {"subtitle_path": subtitle_path}
-
-    sm.state.update_task(task_id, state=const.TASK_STATE_PROCESSING, progress=40)
-
-    # 5. Get video materials 获取素材
-    downloaded_videos = get_video_materials(
-        task_id, params, video_terms, audio_duration
-    )
-    if not downloaded_videos:
-        sm.state.update_task(task_id, state=const.TASK_STATE_FAILED)
-        return
-
-    if stop_at == "materials":
-        sm.state.update_task(
-            task_id,
-            state=const.TASK_STATE_COMPLETE,
-            progress=100,
-            materials=downloaded_videos,
-        )
-        return {"materials": downloaded_videos}
-
-    sm.state.update_task(task_id, state=const.TASK_STATE_PROCESSING, progress=50)
-
-    # 6. Generate final videos
-    final_video_paths, combined_video_paths = generate_final_videos(
-        task_id, params, downloaded_videos, audio_file, subtitle_path
-    )
-
-    if not final_video_paths:
-        sm.state.update_task(task_id, state=const.TASK_STATE_FAILED)
-        return
-
-    logger.success(
-        f"task {task_id} finished, generated {len(final_video_paths)} videos."
-    )
-
     kwargs = {
-        "videos": final_video_paths,
-        "combined_videos": combined_video_paths,
-        "script": video_script,
-        "terms": video_terms,
-        "audio_file": audio_file,
-        "audio_duration": audio_duration,
-        "subtitle_path": subtitle_path,
-        "materials": downloaded_videos,
-    }
+        "videos": combined_video_path,
+        }
     sm.state.update_task(
         task_id, state=const.TASK_STATE_COMPLETE, progress=100, **kwargs
     )
-    return kwargs
 
-
-if __name__ == "__main__":
-    task_id = "task_id"
-    params = VideoParams(
-        video_subject="金钱的作用",
-        voice_name="zh-CN-XiaoyiNeural-Female",
-        voice_rate=1.0,
-
-    )
-    start(task_id, params, stop_at="video")

@@ -40,8 +40,8 @@ def combine_videos2(
     logger.info(f"max duration of audio: {audio_duration} seconds")
     # Required duration of each clip
     req_dur = audio_duration / len(video_paths)
-    if req_dur > max_clip_duration:
-        req_dur = max_clip_duration
+    #if req_dur > max_clip_duration:
+    req_dur = max_clip_duration
     logger.info(f"each clip will be maximum {req_dur} {audio_duration / len(video_paths)} seconds long")
     output_dir = os.path.dirname(combined_video_path)
 
@@ -54,18 +54,18 @@ def combine_videos2(
     #将原始视频拆分成片段
     raw_clips = []
     for video_path in video_paths:
-        clip = VideoFileClip(video_path).without_audio()
+        clip = VideoFileClip(video_path)#.without_audio()
         clip_duration = clip.duration
-        start_time = float(random.randint(0, int(clip_duration/2)))
+        start_time = 0#float(random.randint(0, int(clip_duration/2)))
         #随机剪裁
-        while int(start_time) < int(clip_duration):
+        while start_time < clip_duration:
             end_time = min(start_time + req_dur, clip_duration)
             split_clip = clip.subclip(start_time, end_time)
             raw_clips.append(split_clip)
             # logger.info(f"splitting from {start_time:.2f} to {end_time:.2f}, clip duration {clip_duration:.2f}, split_clip duration {split_clip.duration:.2f}")
-            start_time = float(random.randint(int(end_time), int(clip_duration)))
+            start_time = end_time #+ float(random.randint(0,30))
          
-
+    logger.info(f"raw_clips {len(raw_clips)}")
     # random video_paths order
     if video_concat_mode.value == VideoConcatMode.random.value:
         random.shuffle(raw_clips)

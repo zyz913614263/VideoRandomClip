@@ -105,7 +105,7 @@ class VideoParams(BaseModel):
     video_clip_duration: Optional[int] = 5
     video_count: Optional[int] = 1
 
-    video_source: Optional[str] = "pexels"
+    video_source: Optional[str] = "local"
     video_materials: Optional[List[MaterialInfo]] = None  # 用于生成视频的素材
 
     video_language: Optional[str] = ""  # auto detect
@@ -129,6 +129,7 @@ class VideoParams(BaseModel):
     stroke_width: float = 1.5
     n_threads: Optional[int] = 2
     paragraph_number: Optional[int] = 1
+    video_len:Optional[float] = 10
 
 
 class SubtitleRequest(BaseModel):

@@ -40,7 +40,7 @@ hide_streamlit_style = """
 <style>#root > div:nth-child(1) > div > div > div > div > section > div {padding-top: 0rem;}</style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-st.title(f"MoneyPrinterTurbo v{config.project_version}")
+st.title(f"VideoRandomClip v{config.project_version}")
 
 support_locales = [
     "zh-CN",
@@ -161,7 +161,7 @@ def tr(key):
     return loc.get("Translation", {}).get(key, key)
 
 
-st.write(tr("Get Help"))
+#st.write(tr("Get Help"))
 
 llm_provider = config.app.get("llm_provider", "").lower()
 
@@ -313,9 +313,13 @@ if start_button:
     logger.info(tr("Start Generating Video"))
     logger.info(utils.to_json(params))
     scroll_to_bottom()
-    tm.start2(task_id,params)
+    video_files = tm.start2(task_id,params)
 
     st.success(tr("Video Generation Completed"))
-    open_task_folder(task_id)
-    logger.info(tr("Video Generation Completed"))
-    scroll_to_bottom()
+    try:
+        if video_files:
+            player_cols = st.columns(len(video_files) * 2 + 1)
+            for i, url in enumerate(video_files):
+                player_cols[i * 2 + 1].video(url)
+    except Exception:
+        pass

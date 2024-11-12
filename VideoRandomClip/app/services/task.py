@@ -230,4 +230,5 @@ def start2(task_id:str,params: VideoParams):
     sm.state.update_task(
         task_id, state=const.TASK_STATE_COMPLETE, progress=100, **kwargs
     )
+    return  [combined_video_path]
 
